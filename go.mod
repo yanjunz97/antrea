@@ -41,7 +41,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/streamrail/concurrent-map v0.0.0-20160823150647-8bf1e9bacbf6 // indirect
 	github.com/stretchr/testify v1.7.0
-	github.com/ti-mo/conntrack v0.3.0
+	github.com/ti-mo/conntrack v0.4.0
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vmware/go-ipfix v0.5.7
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
@@ -108,7 +108,7 @@ require (
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mattn/go-runewidth v0.0.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	github.com/mdlayher/netlink v1.1.0 // indirect
+	github.com/mdlayher/netlink v1.1.2-0.20201013204415-ded538f7f4be // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
