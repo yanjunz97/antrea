@@ -15,6 +15,8 @@
 package querier
 
 import (
+	"time"
+
 	ipfixintermediate "github.com/vmware/go-ipfix/pkg/intermediate"
 )
 
@@ -28,4 +30,6 @@ type Metrics struct {
 type FlowAggregatorQuerier interface {
 	GetFlowRecords(flowKey *ipfixintermediate.FlowKey) []map[string]interface{}
 	GetRecordMetrics() Metrics
+	UpdateLogTicker(d time.Duration)
+	UpdateIncludePodLabels(includePodLabels bool)
 }

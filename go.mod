@@ -151,3 +151,5 @@ require (
 // hcshim repo is modifed to add "AdditionalParams" field to HNSEndpoint struct.
 // We will use this replace before pushing the change to hcshim upstream repo.
 replace github.com/Microsoft/hcsshim v0.8.9 => github.com/ruicao93/hcsshim v0.8.10-0.20210114035434-63fe00c1b9aa
+
+replace github.com/vmware/go-ipfix v0.5.9 => github.com/yanjunz97/go-ipfix v0.2.1-0.20211101225655-10fa3eb691ec

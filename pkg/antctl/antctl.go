@@ -508,6 +508,30 @@ var CommandList = &commandList{
 			},
 			transformedResponse: reflect.TypeOf(recordmetrics.Response{}),
 		},
+		{
+			use:          "updateparam",
+			short:        "Update parameters used in flow aggregator",
+			long:         "Update parameters used in flow aggregator. It includes logTicker.",
+			commandGroup: flat,
+			flowAggregatorEndpoint: &endpoint{
+				nonResourceEndpoint: &nonResourceEndpoint{
+					path:       "/updateparam",
+					outputType: single,
+					params: []flagInfo{
+						{
+							name:  "logticker",
+							usage: "Update logTicker for the visibility of processing stats in flow aggregator. Can be a signed sequence of decimal numbers with optional fraction and unit suffix.  Valid time units are ns, us (or µs), ms, s, m, h.",
+						},
+						{
+							name:            "podlabels",
+							supportedValues: []string{"true", "false"},
+							usage:           "Determine whether source and destination Pod labels will be included in the flow records. Can be true or false.",
+						},
+					},
+				},
+			},
+			transformedResponse: reflect.TypeOf(0),
+		},
 	},
 	rawCommands: []rawCommand{
 		{

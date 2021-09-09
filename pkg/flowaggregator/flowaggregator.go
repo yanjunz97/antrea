@@ -162,6 +162,13 @@ const (
 	podInfoIndex = "podInfo"
 )
 
+type changableParamsMsg int
+
+const (
+	msgIncludePodLabels changableParamsMsg = iota
+	msgExternalFlowCollectorAddr
+)
+
 type AggregatorTransportProtocol string
 
 const (
@@ -191,6 +198,14 @@ type flowAggregator struct {
 	sendJSONRecord              bool
 	numRecordsExported          int64
 	numRecordsReceived          int64
+	logTicker                   *time.Ticker
+	updateCh                    chan changableParamsMsg
+	changedParams               changableParams
+}
+
+type changableParams struct {
+	includePodLabels          bool
+	externalFlowCollectorAddr string
 }
 
 func NewFlowAggregator(
@@ -222,6 +237,9 @@ func NewFlowAggregator(
 		observationDomainID:         observationDomainID,
 		podInformer:                 podInformer,
 		sendJSONRecord:              sendJSONRecord,
+		logTicker:                   time.NewTicker(time.Minute),
+		updateCh:                    make(chan changableParamsMsg),
+		changedParams:               changableParams{},
 	}
 	podInformer.Informer().AddIndexers(cache.Indexers{podInfoIndex: podInfoIndexFunc})
 	return fa
@@ -385,7 +403,6 @@ func (fa *flowAggregator) Run(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 
 func (fa *flowAggregator) flowRecordExpiryCheck(stopCh <-chan struct{}) {
 	expireTimer := time.NewTimer(fa.activeFlowRecordTimeout)
-	logTicker := time.NewTicker(time.Minute)
 	for {
 		select {
 		case <-stopCh:
@@ -417,12 +434,28 @@ func (fa *flowAggregator) flowRecordExpiryCheck(stopCh <-chan struct{}) {
 			}
 			// Get the new expiry and reset the timer.
 			expireTimer.Reset(fa.aggregationProcess.GetExpiryFromExpirePriorityQueue())
-		case <-logTicker.C:
+		case <-fa.logTicker.C:
 			// Add visibility of processing stats of Flow Aggregator
 			klog.V(4).InfoS("Total number of records received", "count", fa.collectingProcess.GetNumRecordsReceived())
 			klog.V(4).InfoS("Total number of records exported", "count", fa.numRecordsExported)
 			klog.V(4).InfoS("Total number of flows stored in Flow Aggregator", "count", fa.aggregationProcess.GetNumFlows())
 			klog.V(4).InfoS("Number of exporters connected with Flow Aggregator", "count", fa.collectingProcess.GetNumConnToCollector())
+		case msg := <-fa.updateCh:
+			switch msg {
+			case msgIncludePodLabels:
+				if fa.includePodLabels != fa.changedParams.includePodLabels {
+					fa.includePodLabels = fa.changedParams.includePodLabels
+					fa.exportingProcess.CloseConnToCollector()
+					fa.exportingProcess = nil
+					expireTimer.Reset(fa.aggregationProcess.GetExpiryFromExpirePriorityQueue())
+				}
+				continue
+			case msgExternalFlowCollectorAddr:
+				fa.externalFlowCollectorAddr = fa.changedParams.externalFlowCollectorAddr
+				fa.exportingProcess = nil
+			default:
+				klog.Errorf("Unsupported type for update parameters in flow aggregator")
+			}
 		}
 	}
 }
@@ -446,10 +479,18 @@ func (fa *flowAggregator) sendFlowKeyRecord(key ipfixintermediate.FlowKey, recor
 		fa.fillPodLabels(key, record.Record)
 		fa.aggregationProcess.SetExternalFieldsFilled(record)
 	}
+	if !fa.includePodLabels && fa.aggregationProcess.AreExternalFieldsFilled(*record) {
+		if err := record.Record.DeleteInfoElement("sourcePodLabels"); err != nil {
+			return fmt.Errorf("error when deleting sourcePodLabels: %v", err)
+		}
+		if err := record.Record.DeleteInfoElement("destinationPodLabels"); err != nil {
+			return fmt.Errorf("error when deleting destinationPodLabels: %v", err)
+		}
+		fa.aggregationProcess.ResetExternalFieldsFilled(record)
+	}
 	if err := fa.set.AddRecord(record.Record.GetOrderedElementList(), templateID); err != nil {
 		return err
 	}
-
 	sentBytes, err := fa.exportingProcess.SendSet(fa.set)
 	if err != nil {
 		return err
@@ -457,7 +498,6 @@ func (fa *flowAggregator) sendFlowKeyRecord(key ipfixintermediate.FlowKey, recor
 	if err = fa.aggregationProcess.ResetStatElementsInRecord(record.Record); err != nil {
 		return err
 	}
-
 	klog.V(4).Infof("Data set sent successfully: %d Bytes sent", sentBytes)
 	fa.numRecordsExported = fa.numRecordsExported + 1
 	return nil
@@ -667,4 +707,18 @@ func (fa *flowAggregator) GetRecordMetrics() querier.Metrics {
 		NumFlows:           fa.aggregationProcess.GetNumFlows(),
 		NumConnToCollector: fa.collectingProcess.GetNumConnToCollector(),
 	}
+}
+
+func (fa *flowAggregator) UpdateLogTicker(d time.Duration) {
+	fa.logTicker.Reset(d)
+}
+
+func (fa *flowAggregator) UpdateIncludePodLabels(includePodLabels bool) {
+	fa.changedParams.includePodLabels = includePodLabels
+	fa.updateCh <- msgIncludePodLabels
+}
+
+func (fa *flowAggregator) UpdateExternalFlowCollectorAddr(externalFlowCollectorAddr string) {
+	fa.changedParams.externalFlowCollectorAddr = externalFlowCollectorAddr
+	fa.updateCh <- msgExternalFlowCollectorAddr
 }

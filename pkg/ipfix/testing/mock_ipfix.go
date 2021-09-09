@@ -351,6 +351,18 @@ func (mr *MockIPFIXAggregationProcessMockRecorder) IsAggregatedRecordIPv4(arg0 i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAggregatedRecordIPv4", reflect.TypeOf((*MockIPFIXAggregationProcess)(nil).IsAggregatedRecordIPv4), arg0)
 }
 
+// ResetExternalFieldsFilled mocks base method
+func (m *MockIPFIXAggregationProcess) ResetExternalFieldsFilled(arg0 *intermediate.AggregationFlowRecord) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ResetExternalFieldsFilled", arg0)
+}
+
+// ResetExternalFieldsFilled indicates an expected call of ResetExternalFieldsFilled
+func (mr *MockIPFIXAggregationProcessMockRecorder) ResetExternalFieldsFilled(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetExternalFieldsFilled", reflect.TypeOf((*MockIPFIXAggregationProcess)(nil).ResetExternalFieldsFilled), arg0)
+}
+
 // ResetStatElementsInRecord mocks base method
 func (m *MockIPFIXAggregationProcess) ResetStatElementsInRecord(arg0 entities.Record) error {
 	m.ctrl.T.Helper()
