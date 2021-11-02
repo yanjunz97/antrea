@@ -162,12 +162,17 @@ const (
 	podInfoIndex = "podInfo"
 )
 
-type changableParamsMsg int
+type updateParam int
 
 const (
-	msgIncludePodLabels changableParamsMsg = iota
-	msgExternalFlowCollectorAddr
+	updateIncludePodLabels updateParam = iota
+	updateExternalFlowCollectorAddr
 )
+
+type updateMsg struct {
+	param updateParam
+	value interface{}
+}
 
 type AggregatorTransportProtocol string
 
@@ -199,13 +204,7 @@ type flowAggregator struct {
 	numRecordsExported          int64
 	numRecordsReceived          int64
 	logTicker                   *time.Ticker
-	updateCh                    chan changableParamsMsg
-	changedParams               changableParams
-}
-
-type changableParams struct {
-	includePodLabels          bool
-	externalFlowCollectorAddr string
+	updateCh                    chan updateMsg
 }
 
 func NewFlowAggregator(
@@ -238,8 +237,7 @@ func NewFlowAggregator(
 		podInformer:                 podInformer,
 		sendJSONRecord:              sendJSONRecord,
 		logTicker:                   time.NewTicker(time.Minute),
-		updateCh:                    make(chan changableParamsMsg),
-		changedParams:               changableParams{},
+		updateCh:                    make(chan updateMsg),
 	}
 	podInformer.Informer().AddIndexers(cache.Indexers{podInfoIndex: podInfoIndexFunc})
 	return fa
@@ -441,18 +439,31 @@ func (fa *flowAggregator) flowRecordExpiryCheck(stopCh <-chan struct{}) {
 			klog.V(4).InfoS("Total number of flows stored in Flow Aggregator", "count", fa.aggregationProcess.GetNumFlows())
 			klog.V(4).InfoS("Number of exporters connected with Flow Aggregator", "count", fa.collectingProcess.GetNumConnToCollector())
 		case msg := <-fa.updateCh:
-			switch msg {
-			case msgIncludePodLabels:
-				if fa.includePodLabels != fa.changedParams.includePodLabels {
-					fa.includePodLabels = fa.changedParams.includePodLabels
-					fa.exportingProcess.CloseConnToCollector()
-					fa.exportingProcess = nil
+			switch msg.param {
+			case updateIncludePodLabels:
+				newIncludePodLabels := msg.value.(bool)
+				if fa.includePodLabels != newIncludePodLabels {
+					fa.includePodLabels = newIncludePodLabels
+					klog.InfoS("Config podLabels is changed %s", "podLabels", fa.includePodLabels)
+					if fa.exportingProcess != nil {
+						fa.exportingProcess.CloseConnToCollector()
+						fa.exportingProcess = nil
+					}
 					expireTimer.Reset(fa.aggregationProcess.GetExpiryFromExpirePriorityQueue())
 				}
 				continue
-			case msgExternalFlowCollectorAddr:
-				fa.externalFlowCollectorAddr = fa.changedParams.externalFlowCollectorAddr
-				fa.exportingProcess = nil
+			case updateExternalFlowCollectorAddr:
+				newAddr := msg.value.(querier.ExternalFlowCollectorAddr)
+				if fa.externalFlowCollectorAddr != newAddr.Address || fa.externalFlowCollectorProto != newAddr.Protocol {
+					fa.externalFlowCollectorAddr = newAddr.Address
+					fa.externalFlowCollectorProto = newAddr.Protocol
+					klog.InfoS("Config ExternalFlowCollectorAddr is changed", "address", fa.externalFlowCollectorAddr, "protocol", fa.externalFlowCollectorProto)
+					if fa.exportingProcess != nil {
+						fa.exportingProcess.CloseConnToCollector()
+						fa.exportingProcess = nil
+					}
+					expireTimer.Reset(fa.aggregationProcess.GetExpiryFromExpirePriorityQueue())
+				}
 			default:
 				klog.Errorf("Unsupported type for update parameters in flow aggregator")
 			}
@@ -714,11 +725,15 @@ func (fa *flowAggregator) UpdateLogTicker(d time.Duration) {
 }
 
 func (fa *flowAggregator) UpdateIncludePodLabels(includePodLabels bool) {
-	fa.changedParams.includePodLabels = includePodLabels
-	fa.updateCh <- msgIncludePodLabels
+	fa.updateCh <- updateMsg{
+		param: updateIncludePodLabels,
+		value: includePodLabels,
+	}
 }
 
-func (fa *flowAggregator) UpdateExternalFlowCollectorAddr(externalFlowCollectorAddr string) {
-	fa.changedParams.externalFlowCollectorAddr = externalFlowCollectorAddr
-	fa.updateCh <- msgExternalFlowCollectorAddr
+func (fa *flowAggregator) UpdateExternalFlowCollectorAddr(externalFlowCollectorAddr querier.ExternalFlowCollectorAddr) {
+	fa.updateCh <- updateMsg{
+		param: updateExternalFlowCollectorAddr,
+		value: externalFlowCollectorAddr,
+	}
 }

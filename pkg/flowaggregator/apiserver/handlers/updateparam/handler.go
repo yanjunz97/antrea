@@ -15,11 +15,18 @@
 package updateparam
 
 import (
+	"net"
 	"net/http"
 	"strconv"
 	"time"
 
 	"antrea.io/antrea/pkg/flowaggregator/querier"
+	"antrea.io/antrea/pkg/util/flowexport"
+)
+
+const (
+	defaultExternalFlowCollectorTransport = "tcp"
+	defaultExternalFlowCollectorPort      = "4739"
 )
 
 // HandleFunc returns the function which can handle the /updateparam API request.
@@ -40,6 +47,17 @@ func HandleFunc(faq querier.FlowAggregatorQuerier) http.HandlerFunc {
 				http.Error(w, "Error when parsing podlabels: "+err.Error(), http.StatusNotFound)
 			}
 			faq.UpdateIncludePodLabels(includePodLabels)
+		}
+		externalFlowCollectorAddr := r.URL.Query().Get("externalFlowCollectorAddr")
+		if externalFlowCollectorAddr != "" {
+			host, port, proto, err := flowexport.ParseFlowCollectorAddr(externalFlowCollectorAddr, defaultExternalFlowCollectorPort, defaultExternalFlowCollectorTransport)
+			if err != nil {
+				http.Error(w, "Error when parsing externalFlowCollectorAddr: "+err.Error(), http.StatusNotFound)
+			}
+			faq.UpdateExternalFlowCollectorAddr(querier.ExternalFlowCollectorAddr{
+				Address:  net.JoinHostPort(host, port),
+				Protocol: proto,
+			})
 		}
 	}
 }

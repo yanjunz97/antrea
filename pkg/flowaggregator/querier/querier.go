@@ -27,9 +27,15 @@ type Metrics struct {
 	NumConnToCollector int64
 }
 
+type ExternalFlowCollectorAddr struct {
+	Address  string
+	Protocol string
+}
+
 type FlowAggregatorQuerier interface {
 	GetFlowRecords(flowKey *ipfixintermediate.FlowKey) []map[string]interface{}
 	GetRecordMetrics() Metrics
 	UpdateLogTicker(d time.Duration)
 	UpdateIncludePodLabels(includePodLabels bool)
+	UpdateExternalFlowCollectorAddr(externalFlowCollectorAddr ExternalFlowCollectorAddr)
 }

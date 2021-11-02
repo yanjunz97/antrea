@@ -519,13 +519,20 @@ var CommandList = &commandList{
 					outputType: single,
 					params: []flagInfo{
 						{
-							name:  "logticker",
-							usage: "Update logTicker for the visibility of processing stats in flow aggregator. Can be a signed sequence of decimal numbers with optional fraction and unit suffix.  Valid time units are ns, us (or µs), ms, s, m, h.",
+							name:      "logticker",
+							shorthand: "l",
+							usage:     "Update logTicker for the visibility of processing stats in flow aggregator. Can be a signed sequence of decimal numbers with optional fraction and unit suffix.  Valid time units are ns, us (or µs), ms, s, m, h.",
 						},
 						{
 							name:            "podlabels",
+							shorthand:       "p",
 							supportedValues: []string{"true", "false"},
 							usage:           "Determine whether source and destination Pod labels will be included in the flow records. Can be true or false.",
+						},
+						{
+							name:      "externalFlowCollectorAddr",
+							shorthand: "e",
+							usage:     "Provide the flow collector address as string with format <IP>:<port>[:<proto>].",
 						},
 					},
 				},
