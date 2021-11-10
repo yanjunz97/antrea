@@ -38,7 +38,7 @@ func HandleFunc(faq querier.FlowAggregatorQuerier) http.HandlerFunc {
 			if err != nil {
 				http.Error(w, "Error when parsing logticker: "+err.Error(), http.StatusNotFound)
 			}
-			faq.UpdateLogTicker(logTickerDuration)
+			faq.SetLogTicker(logTickerDuration)
 		}
 		includePodLabelsStr := r.URL.Query().Get("podlabels")
 		if includePodLabelsStr != "" {
@@ -46,18 +46,34 @@ func HandleFunc(faq querier.FlowAggregatorQuerier) http.HandlerFunc {
 			if err != nil {
 				http.Error(w, "Error when parsing podlabels: "+err.Error(), http.StatusNotFound)
 			}
-			faq.UpdateIncludePodLabels(includePodLabels)
+			faq.SetIncludePodLabels(includePodLabels)
 		}
-		externalFlowCollectorAddr := r.URL.Query().Get("externalFlowCollectorAddr")
+		externalFlowCollectorAddr := r.URL.Query().Get("externalflowcollectoraddr")
 		if externalFlowCollectorAddr != "" {
 			host, port, proto, err := flowexport.ParseFlowCollectorAddr(externalFlowCollectorAddr, defaultExternalFlowCollectorPort, defaultExternalFlowCollectorTransport)
 			if err != nil {
 				http.Error(w, "Error when parsing externalFlowCollectorAddr: "+err.Error(), http.StatusNotFound)
 			}
-			faq.UpdateExternalFlowCollectorAddr(querier.ExternalFlowCollectorAddr{
+			faq.SetExternalFlowCollectorAddr(querier.ExternalFlowCollectorAddr{
 				Address:  net.JoinHostPort(host, port),
 				Protocol: proto,
 			})
+		}
+		activeFlowRecordTimeoutStr := r.URL.Query().Get("activeflowrecordtimeout")
+		if activeFlowRecordTimeoutStr != "" {
+			activeFlowRecordTimeout, err := time.ParseDuration(activeFlowRecordTimeoutStr)
+			if err != nil {
+				http.Error(w, "Error when parsing activeflowrecordtimeout: "+err.Error(), http.StatusNotFound)
+			}
+			faq.SetActiveFlowRecordTimeout(activeFlowRecordTimeout)
+		}
+		inactiveFlowRecordTimeoutStr := r.URL.Query().Get("inactiveflowrecordtimeout")
+		if inactiveFlowRecordTimeoutStr != "" {
+			inactiveFlowRecordTimeout, err := time.ParseDuration(inactiveFlowRecordTimeoutStr)
+			if err != nil {
+				http.Error(w, "Error when parsing inactiveflowrecordtimeout: "+err.Error(), http.StatusNotFound)
+			}
+			faq.SetInactiveFlowRecordTimeout(inactiveFlowRecordTimeout)
 		}
 	}
 }

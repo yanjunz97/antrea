@@ -35,7 +35,9 @@ type ExternalFlowCollectorAddr struct {
 type FlowAggregatorQuerier interface {
 	GetFlowRecords(flowKey *ipfixintermediate.FlowKey) []map[string]interface{}
 	GetRecordMetrics() Metrics
-	UpdateLogTicker(d time.Duration)
-	UpdateIncludePodLabels(includePodLabels bool)
-	UpdateExternalFlowCollectorAddr(externalFlowCollectorAddr ExternalFlowCollectorAddr)
+	SetLogTicker(d time.Duration)
+	SetIncludePodLabels(includePodLabels bool)
+	SetExternalFlowCollectorAddr(externalFlowCollectorAddr ExternalFlowCollectorAddr)
+	SetActiveFlowRecordTimeout(activeFlowRecordTimeout time.Duration)
+	SetInactiveFlowRecordTimeout(inactiveFlowRecordTimeout time.Duration)
 }

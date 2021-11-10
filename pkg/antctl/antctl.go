@@ -509,9 +509,19 @@ var CommandList = &commandList{
 			transformedResponse: reflect.TypeOf(recordmetrics.Response{}),
 		},
 		{
-			use:          "updateparam",
-			short:        "Update parameters used in flow aggregator",
-			long:         "Update parameters used in flow aggregator. It includes logTicker.",
+			use:   "updateparam",
+			short: "Update parameters used in flow aggregator",
+			long:  "Update parameters used in flow aggregator. It includes logTicker.",
+			example: `  Update logTicker
+  $ antctl updateparam -l 2m
+  Update podLabels
+  $ antctl updateparam -p true
+  Update externalFlowCollectorAddr
+  $ antctl updateparam -e 
+  Update activeFlowRecordTimeout
+  $ antctl activeflowrecordtimeout -a 120s
+  Update inactiveFlowRecordTimeout
+  $ antctl inactiveflowrecordtimeout -i 240s`,
 			commandGroup: flat,
 			flowAggregatorEndpoint: &endpoint{
 				nonResourceEndpoint: &nonResourceEndpoint{
@@ -530,9 +540,19 @@ var CommandList = &commandList{
 							usage:           "Determine whether source and destination Pod labels will be included in the flow records. Can be true or false.",
 						},
 						{
-							name:      "externalFlowCollectorAddr",
+							name:      "externalflowcollectoraddr",
 							shorthand: "e",
 							usage:     "Provide the flow collector address as string with format <IP>:<port>[:<proto>].",
+						},
+						{
+							name:      "activeflowrecordtimeout",
+							shorthand: "a",
+							usage:     "Update activeFlowRecordTimeout which determines how often the flow aggregator exports the active flow records to the flow collector. Can be a signed sequence of decimal numbers with optional fraction and unit suffix.  Valid time units are ns, us (or µs), ms, s, m, h.",
+						},
+						{
+							name:      "inactiveflowrecordtimeout",
+							shorthand: "i",
+							usage:     "Update inactiveFlowRecordTimeout which determines how often the flow aggregator exports the inactive flow records to the flow collector. Can be a signed sequence of decimal numbers with optional fraction and unit suffix.  Valid time units are ns, us (or µs), ms, s, m, h.",
 						},
 					},
 				},

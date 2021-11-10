@@ -26,7 +26,6 @@ import (
 
 	"antrea.io/antrea/pkg/apis"
 	flowaggregatorconfig "antrea.io/antrea/pkg/config/flowaggregator"
-	"antrea.io/antrea/pkg/flowaggregator"
 	"antrea.io/antrea/pkg/util/flowexport"
 )
 
@@ -35,7 +34,7 @@ const (
 	defaultExternalFlowCollectorPort      = "4739"
 	defaultActiveFlowRecordTimeout        = 60 * time.Second
 	defaultInactiveFlowRecordTimeout      = 90 * time.Second
-	defaultAggregatorTransportProtocol    = flowaggregator.AggregatorTransportProtocolTLS
+	defaultAggregatorTransportProtocol    = flowaggregatorconfig.AggregatorTransportProtocolTLS
 	defaultFlowAggregatorAddress          = "flow-aggregator.flow-aggregator.svc"
 	defaultRecordFormat                   = "IPFIX"
 )
@@ -54,7 +53,7 @@ type Options struct {
 	// Expiration timeout for inactive flow records in the flow aggregator
 	inactiveFlowRecordTimeout time.Duration
 	// Transport protocol over which the aggregator collects IPFIX records from all Agents
-	aggregatorTransportProtocol flowaggregator.AggregatorTransportProtocol
+	aggregatorTransportProtocol flowaggregatorconfig.AggregatorTransportProtocol
 	// DNS name or IP address of flow aggregator for generating TLS certificate
 	flowAggregatorAddress string
 	// Format for record sent to the configured flow collector

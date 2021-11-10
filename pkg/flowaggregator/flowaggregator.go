@@ -16,6 +16,7 @@ package flowaggregator
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -26,12 +27,15 @@ import (
 	"github.com/vmware/go-ipfix/pkg/exporter"
 	ipfixintermediate "github.com/vmware/go-ipfix/pkg/intermediate"
 	ipfixregistry "github.com/vmware/go-ipfix/pkg/registry"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
+	flowaggregatorconfig "antrea.io/antrea/pkg/config/flowaggregator"
 	"antrea.io/antrea/pkg/flowaggregator/querier"
 	"antrea.io/antrea/pkg/ipfix"
 )
@@ -174,18 +178,10 @@ type updateMsg struct {
 	value interface{}
 }
 
-type AggregatorTransportProtocol string
-
-const (
-	AggregatorTransportProtocolTCP AggregatorTransportProtocol = "TCP"
-	AggregatorTransportProtocolTLS AggregatorTransportProtocol = "TLS"
-	AggregatorTransportProtocolUDP AggregatorTransportProtocol = "UDP"
-)
-
 type flowAggregator struct {
 	externalFlowCollectorAddr   string
 	externalFlowCollectorProto  string
-	aggregatorTransportProtocol AggregatorTransportProtocol
+	aggregatorTransportProtocol flowaggregatorconfig.AggregatorTransportProtocol
 	collectingProcess           ipfix.IPFIXCollectingProcess
 	aggregationProcess          ipfix.IPFIXAggregationProcess
 	activeFlowRecordTimeout     time.Duration
@@ -212,7 +208,7 @@ func NewFlowAggregator(
 	externalFlowCollectorProto string,
 	activeFlowRecTimeout time.Duration,
 	inactiveFlowRecTimeout time.Duration,
-	aggregatorTransportProtocol AggregatorTransportProtocol,
+	aggregatorTransportProtocol flowaggregatorconfig.AggregatorTransportProtocol,
 	flowAggregatorAddress string,
 	includePodLabels bool,
 	k8sClient kubernetes.Interface,
@@ -260,7 +256,7 @@ func podInfoIndexFunc(obj interface{}) ([]string, error) {
 
 func (fa *flowAggregator) InitCollectingProcess() error {
 	var cpInput collector.CollectorInput
-	if fa.aggregatorTransportProtocol == AggregatorTransportProtocolTLS {
+	if fa.aggregatorTransportProtocol == flowaggregatorconfig.AggregatorTransportProtocolTLS {
 		parentCert, privateKey, caCert, err := generateCACertKey()
 		if err != nil {
 			return fmt.Errorf("error when generating CA certificate: %v", err)
@@ -288,7 +284,7 @@ func (fa *flowAggregator) InitCollectingProcess() error {
 			ServerKey:     serverKey,
 			ServerCert:    serverCert,
 		}
-	} else if fa.aggregatorTransportProtocol == AggregatorTransportProtocolTCP {
+	} else if fa.aggregatorTransportProtocol == flowaggregatorconfig.AggregatorTransportProtocolTCP {
 		cpInput = collector.CollectorInput{
 			Address:       collectorAddress,
 			Protocol:      tcpTransport,
@@ -720,20 +716,71 @@ func (fa *flowAggregator) GetRecordMetrics() querier.Metrics {
 	}
 }
 
-func (fa *flowAggregator) UpdateLogTicker(d time.Duration) {
+func (fa *flowAggregator) SetLogTicker(d time.Duration) {
 	fa.logTicker.Reset(d)
 }
 
-func (fa *flowAggregator) UpdateIncludePodLabels(includePodLabels bool) {
+func (fa *flowAggregator) SetIncludePodLabels(includePodLabels bool) {
 	fa.updateCh <- updateMsg{
 		param: updateIncludePodLabels,
 		value: includePodLabels,
 	}
 }
 
-func (fa *flowAggregator) UpdateExternalFlowCollectorAddr(externalFlowCollectorAddr querier.ExternalFlowCollectorAddr) {
+func (fa *flowAggregator) SetExternalFlowCollectorAddr(externalFlowCollectorAddr querier.ExternalFlowCollectorAddr) {
 	fa.updateCh <- updateMsg{
 		param: updateExternalFlowCollectorAddr,
 		value: externalFlowCollectorAddr,
 	}
+}
+
+func (fa *flowAggregator) SetActiveFlowRecordTimeout(activeFlowRecordTimeout time.Duration) {
+	configMap, err := fa.GetConfigMap()
+	if err != nil {
+		klog.Warningf("Get flow aggregator configmap failed: %v", err)
+	}
+
+	var flowAggregatorConf flowaggregatorconfig.FlowAggregatorConfig
+	if err := yaml.Unmarshal([]byte(configMap.Data["flow-aggregator.conf"]), &flowAggregatorConf); err != nil {
+		klog.Warningf("failed to unmarshal FlowAggregator config from ConfigMap: %v", err)
+	}
+	flowAggregatorConf.ActiveFlowRecordTimeout = activeFlowRecordTimeout.String()
+	b, err := yaml.Marshal(&flowAggregatorConf)
+	if err != nil {
+		klog.Warningf("failed to marshal FlowAggregator config")
+	}
+	configMap.Data["flow-aggregator.conf"] = string(b)
+	if _, err := fa.k8sClient.CoreV1().ConfigMaps("flow-aggregator").Update(context.TODO(), configMap, metav1.UpdateOptions{}); err != nil {
+		klog.Warningf("failed to update ConfigMap %s: %v", configMap.Name, err)
+	}
+
+	fa.activeFlowRecordTimeout = activeFlowRecordTimeout
+	fa.aggregationProcess.SetActiveExpiryTimeout(activeFlowRecordTimeout)
+}
+
+func (fa *flowAggregator) SetInactiveFlowRecordTimeout(inactiveFlowRecordTimeout time.Duration) {
+	fa.inactiveFlowRecordTimeout = inactiveFlowRecordTimeout
+	fa.aggregationProcess.SetInactiveExpiryTimeout(inactiveFlowRecordTimeout)
+}
+
+func (fa *flowAggregator) GetConfigMap() (*corev1.ConfigMap, error) {
+	deployment, err := fa.k8sClient.AppsV1().Deployments("flow-aggregator").Get(context.TODO(), "flow-aggregator", metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve Flow aggregator deployment: %v", err)
+	}
+	var configMapName string
+	for _, volume := range deployment.Spec.Template.Spec.Volumes {
+		if volume.ConfigMap != nil && volume.Name == "flow-aggregator-config" {
+			configMapName = volume.ConfigMap.Name
+			break
+		}
+	}
+	if len(configMapName) == 0 {
+		return nil, fmt.Errorf("failed to locate %s ConfigMap volume", "flow-aggregator-config")
+	}
+	configMap, err := fa.k8sClient.CoreV1().ConfigMaps("flow-aggregator").Get(context.TODO(), configMapName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ConfigMap %s: %v", configMapName, err)
+	}
+	return configMap, nil
 }

@@ -38,6 +38,8 @@ type IPFIXAggregationProcess interface {
 	SetExternalFieldsFilled(record *ipfixintermediate.AggregationFlowRecord)
 	ResetExternalFieldsFilled(record *ipfixintermediate.AggregationFlowRecord)
 	AreExternalFieldsFilled(record ipfixintermediate.AggregationFlowRecord) bool
+	SetActiveExpiryTimeout(activeExpiryTimeout time.Duration)
+	SetInactiveExpiryTimeout(inactiveExpiryTimeout time.Duration)
 	GetNumFlows() int64
 }
 
@@ -107,4 +109,12 @@ func (ap *ipfixAggregationProcess) AreExternalFieldsFilled(record ipfixintermedi
 
 func (ap *ipfixAggregationProcess) GetNumFlows() int64 {
 	return ap.AggregationProcess.GetNumFlows()
+}
+
+func (ap *ipfixAggregationProcess) SetActiveExpiryTimeout(activeExpiryTimeout time.Duration) {
+	ap.AggregationProcess.SetActiveExpiryTimeout(activeExpiryTimeout)
+}
+
+func (ap *ipfixAggregationProcess) SetInactiveExpiryTimeout(activeExpiryTimeout time.Duration) {
+	ap.AggregationProcess.SetInactiveExpiryTimeout(activeExpiryTimeout)
 }

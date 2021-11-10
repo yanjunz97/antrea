@@ -377,6 +377,18 @@ func (mr *MockIPFIXAggregationProcessMockRecorder) ResetStatElementsInRecord(arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetStatElementsInRecord", reflect.TypeOf((*MockIPFIXAggregationProcess)(nil).ResetStatElementsInRecord), arg0)
 }
 
+// SetActiveExpiryTimeout mocks base method
+func (m *MockIPFIXAggregationProcess) SetActiveExpiryTimeout(arg0 time.Duration) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetActiveExpiryTimeout", arg0)
+}
+
+// SetActiveExpiryTimeout indicates an expected call of SetActiveExpiryTimeout
+func (mr *MockIPFIXAggregationProcessMockRecorder) SetActiveExpiryTimeout(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetActiveExpiryTimeout", reflect.TypeOf((*MockIPFIXAggregationProcess)(nil).SetActiveExpiryTimeout), arg0)
+}
+
 // SetCorrelatedFieldsFilled mocks base method
 func (m *MockIPFIXAggregationProcess) SetCorrelatedFieldsFilled(arg0 *intermediate.AggregationFlowRecord) {
 	m.ctrl.T.Helper()
@@ -399,6 +411,18 @@ func (m *MockIPFIXAggregationProcess) SetExternalFieldsFilled(arg0 *intermediate
 func (mr *MockIPFIXAggregationProcessMockRecorder) SetExternalFieldsFilled(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetExternalFieldsFilled", reflect.TypeOf((*MockIPFIXAggregationProcess)(nil).SetExternalFieldsFilled), arg0)
+}
+
+// SetInactiveExpiryTimeout mocks base method
+func (m *MockIPFIXAggregationProcess) SetInactiveExpiryTimeout(arg0 time.Duration) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetInactiveExpiryTimeout", arg0)
+}
+
+// SetInactiveExpiryTimeout indicates an expected call of SetInactiveExpiryTimeout
+func (mr *MockIPFIXAggregationProcessMockRecorder) SetInactiveExpiryTimeout(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInactiveExpiryTimeout", reflect.TypeOf((*MockIPFIXAggregationProcess)(nil).SetInactiveExpiryTimeout), arg0)
 }
 
 // Start mocks base method
