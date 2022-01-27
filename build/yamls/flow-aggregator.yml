@@ -144,11 +144,21 @@ subjects:
   namespace: flow-aggregator
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  name: clickhouse-secret
+  namespace: flow-aggregator
+type: Opaque
+stringData:
+  username: clickhouse_operator
+  password: clickhouse_operator_password
+---
+apiVersion: v1
 data:
   flow-aggregator.conf: |
     # Provide the flow collector address as string with format <IP>:<port>[:<proto>], where proto is tcp or udp.
     # If no L4 transport proto is given, we consider tcp as default.
-    #externalFlowCollectorAddr: ""
+    externalFlowCollectorAddr: "10.96.159.55:4739:tcp"
 
     # Provide the active flow record timeout as a duration string. This determines
     # how often the flow aggregator exports the active flow records to the flow
@@ -203,6 +213,17 @@ data:
 
       # TLS min version from: VersionTLS10, VersionTLS11, VersionTLS12, VersionTLS13.
       #tlsMinVersion:
+    
+    # clickHouse contains ClickHouse related configuration options.
+    clickHouse:
+      # DB name containing antrea table.
+      #database: "default"
+      # URL to ClickHouse DB.
+      dbUrl: "tcp://clickhouse-clickhouse.flow-visibility:9000"
+      # Enables DB driver debug log. 
+      #debug: false
+      # Enables LZ4 compression for batch flow record insert. 
+      #compress: true
 kind: ConfigMap
 metadata:
   annotations: {}
@@ -263,8 +284,19 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: projects.registry.vmware.com/antrea/flow-aggregator:latest
-        imagePullPolicy: IfNotPresent
+        - name: CH_USERNAME
+          valueFrom:
+            secretKeyRef: 
+              name: clickhouse-secret
+              key: username
+        - name: CH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: clickhouse-secret
+              key: password
+        # image: projects.registry.vmware.com/antrea/flow-aggregator:latest
+        image: hanlan/flow-aggregator:v2.0.0
+        imagePullPolicy: Always
         name: flow-aggregator
         ports:
         - containerPort: 4739
