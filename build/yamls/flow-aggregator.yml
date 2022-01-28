@@ -219,7 +219,7 @@ data:
       # DB name containing antrea table.
       #database: "default"
       # URL to ClickHouse DB.
-      dbUrl: "tcp://clickhouse-clickhouse.flow-visibility:9000"
+      dbUrl: "tcp://clickhouse-clickhouse.flow-visibility.svc:9000"
       # Enables DB driver debug log. 
       #debug: false
       # Enables LZ4 compression for batch flow record insert. 

@@ -5,14 +5,6 @@ metadata:
     app: flow-visibility
   name: flow-visibility
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app: flow-visibility
-  name: flow-visibility
-  namespace: flow-visibility
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -101,7 +93,7 @@ data:
     apiVersion: 1
     datasources:
       - name: ClickHouse
-        type: vertamedia-clickhouse-datasource
+        type: grafana-clickhouse-datasource
         access: proxy
         url: http://clickhouse-clickhouse.flow-visibility.svc:8123
         editable: true
