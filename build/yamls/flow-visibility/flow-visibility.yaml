@@ -172,6 +172,10 @@ spec:
               name: grafana-pv
             - mountPath: /etc/grafana/provisioning/datasources
               name: grafana-datasources
+            # - mountPath: /etc/grafana/provisioning/dashboards
+            #   name: grafana-dashboards-provider
+            # - mountPath: /var/lib/grafana/dashboards
+            #   name: grafana-dashboard-config
       volumes:
         - name: grafana-pv
           persistentVolumeClaim:
@@ -179,6 +183,12 @@ spec:
         - name: grafana-datasources
           configMap:
             name: grafana-datasource
+        # - name: grafana-dashboards-provider
+        #   configMap:
+        #     name: grafana-dashboard-provider
+        # - name: grafana-dashboard-config
+        #   configMap:
+        #     name: dashboard-config
 ---
 apiVersion: v1
 kind: Service
@@ -206,7 +216,7 @@ data:
     set -e
     clickhouse client -n <<-EOSQL
       CREATE TABLE IF NOT EXISTS flows (
-          timeInserted DateTime,
+          timeInserted DateTime DEFAULT now(),
           flowStartSeconds DateTime,
           flowEndSeconds DateTime,
           flowEndSecondsFromSourceNode DateTime,

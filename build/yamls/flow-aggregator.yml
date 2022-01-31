@@ -158,7 +158,7 @@ data:
   flow-aggregator.conf: |
     # Provide the flow collector address as string with format <IP>:<port>[:<proto>], where proto is tcp or udp.
     # If no L4 transport proto is given, we consider tcp as default.
-    externalFlowCollectorAddr: "10.96.159.55:4739:tcp"
+    externalFlowCollectorAddr: "10.103.88.6:4739:tcp"
 
     # Provide the active flow record timeout as a duration string. This determines
     # how often the flow aggregator exports the active flow records to the flow
