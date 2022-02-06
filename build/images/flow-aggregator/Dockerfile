@@ -1,4 +1,4 @@
-ARG GO_VERSION
+ARG GO_VERSION=1.17
 FROM golang:${GO_VERSION} as flow-aggregator-build
 
 WORKDIR /antrea

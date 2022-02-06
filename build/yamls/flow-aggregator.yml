@@ -158,7 +158,7 @@ data:
   flow-aggregator.conf: |
     # Provide the flow collector address as string with format <IP>:<port>[:<proto>], where proto is tcp or udp.
     # If no L4 transport proto is given, we consider tcp as default.
-    externalFlowCollectorAddr: "10.103.88.6:4739:tcp"
+    externalFlowCollectorAddr: "10.105.135.90:4739:tcp"
 
     # Provide the active flow record timeout as a duration string. This determines
     # how often the flow aggregator exports the active flow records to the flow
@@ -295,7 +295,7 @@ spec:
               name: clickhouse-secret
               key: password
         # image: projects.registry.vmware.com/antrea/flow-aggregator:latest
-        image: hanlan/flow-aggregator:v2.0.0
+        image: hanlan/flow-aggregator:v2.0.1
         imagePullPolicy: Always
         name: flow-aggregator
         ports:
