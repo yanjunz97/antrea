@@ -1,0 +1,477 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: antrea-test
+  name: antrea-test-1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: antrea-test
+  name: antrea-test-2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: antrea-test
+  name: antrea-test-3
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: antrea-test
+  name: antrea-test-4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iperf3-1
+  namespace: antrea-test-1
+spec:
+  clusterIP: 10.96.0.132
+  selector:
+    app: web-server-1
+  ports:
+    - name: tcp
+      protocol: TCP
+      port: 5201
+      targetPort: 5201
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server-1
+  namespace: antrea-test-1
+  labels:
+    app: web-server-1
+spec:
+  selector:
+    matchLabels:
+      app: web-server-1
+  template:
+    metadata:
+      labels:
+        app: web-server-1
+    spec:
+      containers:
+      - name: iperf-server-1
+        image: zyiou/iperf
+        imagePullPolicy: IfNotPresent
+        command: ["iperf"]
+        args: ["-s", "-p", "5201"]
+        ports:
+        - containerPort: 5201
+          protocol: TCP
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client1-1
+  namespace: antrea-test-1
+  labels:
+    app: web-client-1
+spec:
+  containers:
+  - name: web-client1-1
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.132", "-p", "5201", "-t", "3000", "-b", "10M"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client1-2
+  namespace: antrea-test-1
+  labels:
+    app: web-client-1
+spec:
+  containers:
+  - name: web-client1-2
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.132", "-p", "5201", "-t", "3000", "-b", "10M"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client1-3
+  namespace: antrea-test-1
+  labels:
+    app: web-client-1
+spec:
+  containers:
+  - name: web-client1-3
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.132", "-p", "5201", "-t", "3000", "-b", "10M"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iperf3-2
+  namespace: antrea-test-2
+spec:
+  clusterIP: 10.96.0.133
+  selector:
+    app: web-server-2
+  ports:
+    - name: tcp
+      protocol: TCP
+      port: 5201
+      targetPort: 5201
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server-2
+  namespace: antrea-test-2
+  labels:
+    app: web-server-2
+spec:
+  selector:
+    matchLabels:
+      app: web-server-2
+  template:
+    metadata:
+      labels:
+        app: web-server-2
+    spec:
+      containers:
+      - name: iperf-server-2
+        image: zyiou/iperf
+        imagePullPolicy: IfNotPresent
+        command: ["iperf"]
+        args: ["-s", "-p", "5201"]
+        ports:
+        - containerPort: 5201
+          protocol: TCP
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+      nodeSelector:
+        app: control-plane
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client2-1
+  namespace: antrea-test-2
+  labels:
+    app: web-client-2
+spec:
+  containers:
+  - name: web-client2-1
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.133", "-p", "5201", "-t", "3000", "-b", "15M"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client2-2
+  namespace: antrea-test-2
+  labels:
+    app: web-client-2
+spec:
+  containers:
+  - name: web-client2-2
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.133", "-p", "5201", "-t", "3000", "-b", "15M"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client2-3
+  namespace: antrea-test-2
+  labels:
+    app: web-client-2
+spec:
+  containers:
+  - name: web-client2-3
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.133", "-p", "5201", "-t", "3000", "-b", "15M"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iperf3-3
+  namespace: antrea-test-3
+spec:
+  clusterIP: 10.96.0.134
+  selector:
+    app: web-server-3
+  ports:
+    - name: tcp
+      protocol: TCP
+      port: 5201
+      targetPort: 5201
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server-3
+  namespace: antrea-test-3
+  labels:
+    app: web-server-3
+spec:
+  selector:
+    matchLabels:
+      app: web-server-3
+  template:
+    metadata:
+      labels:
+        app: web-server-3
+    spec:
+      containers:
+      - name: iperf-server-3
+        image: zyiou/iperf
+        imagePullPolicy: IfNotPresent
+        command: ["iperf"]
+        args: ["-s", "-p", "5201"]
+        ports:
+        - containerPort: 5201
+          protocol: TCP
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client3-1
+  namespace: antrea-test-3
+  labels:
+    app: web-client-3
+spec:
+  containers:
+  - name: web-client3-1
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.134", "-p", "5201", "-t", "3000", "-b", "20M"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client3-2
+  namespace: antrea-test-3
+  labels:
+    app: web-client-3
+spec:
+  containers:
+  - name: web-client3-2
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.134", "-p", "5201", "-t", "3000", "-b", "20M"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client3-3
+  namespace: antrea-test-3
+  labels:
+    app: web-client-3
+spec:
+  containers:
+  - name: web-client3-3
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.134", "-p", "5201", "-t", "3000", "-b", "20M"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iperf3-4
+  namespace: antrea-test-4
+spec:
+  clusterIP: 10.96.0.135
+  selector:
+    app: web-server-4
+  ports:
+    - name: tcp
+      protocol: TCP
+      port: 5201
+      targetPort: 5201
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server-4
+  namespace: antrea-test-4
+  labels:
+    app: web-server-4
+spec:
+  selector:
+    matchLabels:
+      app: web-server-4
+  template:
+    metadata:
+      labels:
+        app: web-server-4
+    spec:
+      containers:
+      - name: iperf-server-4
+        image: zyiou/iperf
+        imagePullPolicy: IfNotPresent
+        command: ["iperf"]
+        args: ["-s", "-p", "5201"]
+        ports:
+        - containerPort: 5201
+          protocol: TCP
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+      nodeSelector:
+        app: control-plane
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-client4-1
+  namespace: antrea-test-4
+  labels:
+    app: web-client-4
+spec:
+  containers:
+  - name: web-client4-1
+    image: zyiou/iperf
+    imagePullPolicy: IfNotPresent
+    command: ["iperf"]
+    args: ["-c", "10.96.0.135", "-p", "5201", "-t", "3000", "-b", "10M"]
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-all-ingress-1
+  namespace: antrea-test-1
+spec:
+  podSelector:
+    matchLabels:
+      app: web-server-1
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-all-ingress-2
+  namespace: antrea-test-2
+spec:
+  podSelector:
+    matchLabels:
+      app: web-server-2
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-all-ingress-3
+  namespace: antrea-test-3
+spec:
+  podSelector:
+    matchLabels:
+      app: web-server-3
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-all-ingress-4
+  namespace: antrea-test-4
+spec:
+  podSelector:
+    matchLabels:
+      app: web-server-4
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-all-egress-1
+  namespace: antrea-test-1
+spec:
+  podSelector:
+    matchLabels:
+      app: web-client-1
+  egress:
+  - {}
+  policyTypes:
+  - Egress
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-all-egress-2
+  namespace: antrea-test-2
+spec:
+  podSelector:
+    matchLabels:
+      app: web-client-2
+  egress:
+  - {}
+  policyTypes:
+  - Egress
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-all-egress-3
+  namespace: antrea-test-3
+spec:
+  podSelector:
+    matchLabels:
+      app: web-client-3
+  egress:
+  - {}
+  policyTypes:
+  - Egress
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-all-egress-4
+  namespace: antrea-test-4
+spec:
+  podSelector:
+    matchLabels:
+      app: web-client-4
+  egress:
+  - {}
+  policyTypes:
+  - Egress

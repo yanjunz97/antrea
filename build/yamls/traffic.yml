@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine0
+  labels:
+    app: alpine0
+spec:
+  containers:
+  - name: alpine
+    image: busybox42/alpine-pod:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "ping 8.8.8.8"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine1
+  labels:
+    app: alpine1
+spec:
+  containers:
+  - name: alpine
+    image: busybox42/alpine-pod:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "ping 8.8.4.4"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine2
+  labels:
+    app: alpine2
+spec:
+  containers:
+  - name: alpine
+    image: busybox42/alpine-pod:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "ping 8.8.8.8"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine3
+  labels:
+    app: alpine3
+spec:
+  containers:
+  - name: alpine
+    image: busybox42/alpine-pod:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "ping 8.8.4.4"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine4
+  labels:
+    app: alpine4
+spec:
+  containers:
+  - name: alpine
+    image: busybox42/alpine-pod:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "ping 8.8.4.4"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine5
+  labels:
+    app: alpine5
+spec:
+  containers:
+  - name: alpine
+    image: busybox42/alpine-pod:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "ping 1.1.1.1"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine6
+  labels:
+    app: alpine6
+spec:
+  containers:
+  - name: alpine
+    image: busybox42/alpine-pod:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "ping 8.8.8.8"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine7
+  labels:
+    app: alpine7
+spec:
+  containers:
+  - name: alpine
+    image: busybox42/alpine-pod:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args: ["-c", "ping 1.1.1.1"]
