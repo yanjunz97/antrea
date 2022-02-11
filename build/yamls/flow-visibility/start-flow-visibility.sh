@@ -24,6 +24,7 @@ start_flow_visibility() {
   kubectl apply -f https://raw.githubusercontent.com/Altinity/clickhouse-operator/master/deploy/operator/clickhouse-operator-install-bundle.yaml
   kubectl create namespace flow-visibility
   kubectl create configmap grafana-dashboard-config -n flow-visibility --from-file=${THIS_DIR}/grafana/provisioning/dashboards/
+  kubectl create configmap clickhouse-mounted-configmap -n flow-visibility --from-file=${THIS_DIR}/grafana/provisioning/datasources/
   kubectl apply -f ${THIS_DIR}/flow-visibility.yaml -n flow-visibility
 
   echo "=== Waiting for Clickhouse and Grafana to be ready ==="

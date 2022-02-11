@@ -21,8 +21,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
-  "iteration": 1644093435047,
+  "id": 2,
+  "iteration": 1644612871636,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -220,7 +220,7 @@
           "query": "SELECT\n    $timeSeries as t,\n    count() as count\nFROM $table\n\nWHERE $timeFilter\n\nGROUP BY t\n\nORDER BY t\n",
           "queryType": "sql",
           "rawQuery": "SELECT\n    (intDiv(toUInt32(flowEndSeconds), 1) * 1) * 1000 as t,\n    count() as count\nFROM default.flows\n\nWHERE\n    flowEndSeconds >= toDateTime(1642711765) AND flowEndSeconds <= toDateTime(1642712665)\n    AND sourcePodNamespace = 'antrea-test'\nGROUP BY t\n\nORDER BY t\n",
-          "rawSql": "SELECT count() as count, flowEndSeconds as time\nFROM flows\nWHERE $__timeFilter(flowEndSeconds)\nGROUP BY time\nORDER BY time",
+          "rawSql": "SELECT count() as count, $__timeInterval(flowEndSeconds) as time\nFROM flows\nWHERE $__timeFilter(flowEndSeconds)\nGROUP BY time\nORDER BY time",
           "refId": "A",
           "round": "0s",
           "skip_comments": true,
@@ -935,7 +935,7 @@
       {
         "hide": 2,
         "name": "clickhouse_adhoc_query",
-        "query": "select distinct sourcePodName, destinationPodName, sourcePodNamespace, destinationPodNamespace from flows",
+        "query": "default.flows",
         "skipUrlSync": false,
         "type": "constant"
       }
