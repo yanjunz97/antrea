@@ -98,13 +98,13 @@ func skipRound() bool {
 	// reads the number of rounds requires to be skipped
 	logs := strings.Split(logString, "skipRoundsNum=")
 	if len(logs) != 2 {
-		klog.ErrorS(nil, "Error in finding number of rounds")
+		klog.ErrorS(nil, "Error when finding number of rounds")
 		return false
 	}
 	lines := strings.Split(logs[1], "\n")
 	remainingRoundsNum, convErr := strconv.Atoi(lines[0])
 	if convErr != nil {
-		klog.ErrorS(convErr, "Error in finding last monitor job")
+		klog.ErrorS(convErr, "Error when finding last monitor job")
 		return false
 	}
 	if remainingRoundsNum > 0 {
@@ -123,12 +123,12 @@ func getPodLogs() (string, error) {
 		LabelSelector: monitorLabel,
 	}
 	if err != nil {
-		return logString, fmt.Errorf("error in getting config: %v", err)
+		return logString, fmt.Errorf("error when getting config: %v", err)
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return logString, fmt.Errorf("error in getting access to K8S: %v", err)
+		return logString, fmt.Errorf("error when getting access to K8S: %v", err)
 	}
 	// gets Clickhouse monitor pod
 	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), listOptions)
@@ -141,14 +141,14 @@ func getPodLogs() (string, error) {
 			req := clientset.CoreV1().Pods(namespace).GetLogs(pod.Name, &podLogOpts)
 			podLogs, err := req.Stream(context.TODO())
 			if err != nil {
-				return logString, fmt.Errorf("error in opening stream: %v", err)
+				return logString, fmt.Errorf("error when opening stream: %v", err)
 			}
 			defer podLogs.Close()
 
 			buf := new(bytes.Buffer)
 			_, err = io.Copy(buf, podLogs)
 			if err != nil {
-				return logString, fmt.Errorf("error in copy information from podLogs to buf: %v", err)
+				return logString, fmt.Errorf("error when copying information from podLogs to buf: %v", err)
 			}
 			logString := buf.String()
 			return logString, nil

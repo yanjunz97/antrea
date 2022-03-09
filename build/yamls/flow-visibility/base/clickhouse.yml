@@ -129,7 +129,9 @@ spec:
               - name: MV_NAMES
                 value: "default.flows_pod_view default.flows_node_view default.flows_policy_view"
               - name: NAMESPACE
-                value: "flow-visibility"
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
               - name: MONITOR_LABEL
                 value: "app=clickhouse-monitor"
           restartPolicy: OnFailure
