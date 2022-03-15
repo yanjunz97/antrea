@@ -28,6 +28,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -41,9 +42,13 @@ const (
 	// The monitor stops for 3 intervals after a deletion to wait for the Clickhouse MergeTree Engine to release memory.
 	skipRoundsNum = 3
 	// Connection to Clickhouse timeout if if fails for 1 minute.
-	connectionTimeout = time.Minute
+	connTimeout = time.Minute
 	// Retry connection to Clickhouse every 5 seconds if it fails.
-	connectionWait = 5 * time.Second
+	connRetryInterval = 5 * time.Second
+	// Query to Clickhouse timeout if if fails for 10 seconds.
+	queryTimeout = 10 * time.Second
+	// Retry query to Clickhouse every second if it fails.
+	queryRetryInterval = 1 * time.Second
 	// Time format for timeInserted
 	timeFormat = "2006-01-02 15:04:05"
 )
@@ -160,37 +165,33 @@ func getPodLogs() (string, error) {
 // Connects to Clickhouse in a loop
 func connectLoop() (*sql.DB, error) {
 	// Clickhouse configuration
-	userName := os.Getenv("CH_USERNAME")
-	password := os.Getenv("CH_PASSWORD")
-	host, port := os.Getenv("SVC_HOST"), os.Getenv("SVC_PORT")
-
-	ticker := time.NewTicker(connectionWait)
-	defer ticker.Stop()
-
-	timeoutExceeded := time.After(connectionTimeout)
-	for {
-		select {
-		case <-timeoutExceeded:
-			return nil, fmt.Errorf("failed to connect to Clickhouse after %s", connectionTimeout)
-
-		case <-ticker.C:
-			// Open the database and ping it
-			dataSourceName := fmt.Sprintf("tcp://%s:%s?debug=true&username=%s&password=%s", host, port, userName, password)
-			connect, err := sql.Open("clickhouse", dataSourceName)
-			if err != nil {
-				klog.ErrorS(err, "Failed to connect to Clickhouse")
-			}
-			if err := connect.Ping(); err != nil {
-				if exception, ok := err.(*clickhouse.Exception); ok {
-					klog.ErrorS(nil, "Failed to ping Clickhouse", "message", exception.Message)
-				} else {
-					klog.ErrorS(err, "Failed to ping Clickhouse")
-				}
-			} else {
-				return connect, nil
-			}
+	userName := os.Getenv("CLICKHOUSE_USERNAME")
+	password := os.Getenv("CLICKHOUSE_PASSWORD")
+	databaseURL := os.Getenv("DB_URL")
+	var connect *sql.DB
+	if err := wait.PollImmediate(connRetryInterval, connTimeout, func() (bool, error) {
+		// Open the database and ping it
+		dataSourceName := fmt.Sprintf("%s?debug=true&username=%s&password=%s", databaseURL, userName, password)
+		var err error
+		connect, err = sql.Open("clickhouse", dataSourceName)
+		if err != nil {
+			klog.ErrorS(err, "Failed to connect to Clickhouse")
+			return false, err
 		}
+		if err := connect.Ping(); err != nil {
+			if exception, ok := err.(*clickhouse.Exception); ok {
+				klog.ErrorS(nil, "Failed to ping Clickhouse", "message", exception.Message)
+			} else {
+				klog.ErrorS(err, "Failed to ping Clickhouse")
+			}
+			return false, err
+		} else {
+			return true, nil
+		}
+	}); err != nil {
+		return nil, fmt.Errorf("failed to connect to Clickhouse after %s", connTimeout)
 	}
+	return connect, nil
 }
 
 // Checks the memory usage in the Clickhouse, deletes records when it exceeds the threshold.
@@ -200,7 +201,13 @@ func monitorMemory(connect *sql.DB) bool {
 		totalSpace uint64
 	)
 	// Get memory usage from Clickhouse system table
-	if err := connect.QueryRow("SELECT free_space, total_space FROM system.disks").Scan(&freeSpace, &totalSpace); err != nil {
+	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
+		if err := connect.QueryRow("SELECT free_space, total_space FROM system.disks").Scan(&freeSpace, &totalSpace); err != nil {
+			return false, err
+		} else {
+			return true, nil
+		}
+	}); err != nil {
 		klog.ErrorS(err, "Failed to get memory usage for Clickhouse")
 		return false
 	}
@@ -238,7 +245,13 @@ func getTimeBoundary(connect *sql.DB) (time.Time, error) {
 		return timeBoundary, err
 	}
 	command := fmt.Sprintf("SELECT timeInserted FROM %s LIMIT 1 OFFSET %d", tableName, deleteRowNum)
-	if err := connect.QueryRow(command).Scan(&timeBoundary); err != nil {
+	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
+		if err := connect.QueryRow(command).Scan(&timeBoundary); err != nil {
+			return false, err
+		} else {
+			return true, nil
+		}
+	}); err != nil {
 		return timeBoundary, fmt.Errorf("failed to get timeInserted boundary from %s: %v", tableName, err)
 	}
 	return timeBoundary, nil
@@ -248,8 +261,14 @@ func getTimeBoundary(connect *sql.DB) (time.Time, error) {
 func getDeleteRowNum(connect *sql.DB) (uint64, error) {
 	var deleteRowNum, count uint64
 	command := fmt.Sprintf("SELECT COUNT() FROM %s", tableName)
-	if err := connect.QueryRow(command).Scan(&count); err != nil {
-		return deleteRowNum, fmt.Errorf("Failed to get the number of records from %s: %v", tableName, err)
+	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
+		if err := connect.QueryRow(command).Scan(&count); err != nil {
+			return false, err
+		} else {
+			return true, nil
+		}
+	}); err != nil {
+		return deleteRowNum, fmt.Errorf("failed to get the number of records from %s: %v", tableName, err)
 	}
 	deleteRowNum = uint64(float64(count) * deletePercentage)
 	return deleteRowNum, nil

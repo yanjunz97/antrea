@@ -110,20 +110,18 @@ spec:
           - name: clickhouse-monitor
             image: flow-visibility-clickhouse-monitor
             env:
-              - name: CH_USERNAME
+              - name: CLICKHOUSE_USERNAME
                 valueFrom:
                   secretKeyRef: 
                     name: clickhouse-secret
                     key: username
-              - name: CH_PASSWORD
+              - name: CLICKHOUSE_PASSWORD
                 valueFrom:
                   secretKeyRef:
                     name: clickhouse-secret
                     key: password
-              - name: SVC_HOST
-                value: "clickhouse-clickhouse.flow-visibility.svc.cluster.local"
-              - name: SVC_PORT
-                value: "9000"
+              - name: DB_URL
+                value: "tcp://clickhouse-clickhouse.flow-visibility.svc:9000"
               - name: TABLE_NAME
                 value: "default.flows"
               - name: MV_NAMES

@@ -641,7 +641,8 @@ Grafana flow collector supports the ClickHouse in-memory deployment with limited
 storage size. This is specified in [clickhouse.yml][clickhouse_manifest_yaml].
 The default value of storage size for the ClickHouse server is 8 GiB. Users
 can expect a linear growth in the ClickHouse throughput when they enlarge the
-storage size. To deploy the ClickHouse with a different storage size, please
+storage size. For development or testing environment, you can decrease the storage
+size to 2GB. To deploy the ClickHouse with a different storage size, please
 modify the `sizeLimit` in the following section.
 
 ```yaml

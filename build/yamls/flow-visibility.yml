@@ -4947,20 +4947,18 @@ spec:
         spec:
           containers:
           - env:
-            - name: CH_USERNAME
+            - name: CLICKHOUSE_USERNAME
               valueFrom:
                 secretKeyRef:
                   key: username
                   name: clickhouse-secret
-            - name: CH_PASSWORD
+            - name: CLICKHOUSE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: password
                   name: clickhouse-secret
-            - name: SVC_HOST
-              value: clickhouse-clickhouse.flow-visibility.svc.cluster.local
-            - name: SVC_PORT
-              value: "9000"
+            - name: DB_URL
+              value: tcp://clickhouse-clickhouse.flow-visibility.svc:9000
             - name: TABLE_NAME
               value: default.flows
             - name: MV_NAMES
