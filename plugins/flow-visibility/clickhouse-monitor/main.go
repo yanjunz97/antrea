@@ -173,6 +173,9 @@ func connectLoop() (*sql.DB, error) {
 	userName := os.Getenv("CLICKHOUSE_USERNAME")
 	password := os.Getenv("CLICKHOUSE_PASSWORD")
 	databaseURL := os.Getenv("DB_URL")
+	if len(userName) == 0 || len(password) == 0 || len(databaseURL) == 0 {
+		return nil, fmt.Errorf("unable to load environment variables, CLICKHOUSE_USERNAME, CLICKHOUSE_PASSWORD and DB_URL must be defined")
+	}
 	var connect *sql.DB
 	if err := wait.PollImmediate(connRetryInterval, connTimeout, func() (bool, error) {
 		// Open the database and ping it
