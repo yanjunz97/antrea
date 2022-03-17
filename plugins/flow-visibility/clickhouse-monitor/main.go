@@ -37,17 +37,17 @@ import (
 const (
 	// The storage percentage at which the monitor starts to delete old records. By default, if the storage usage is larger than 50%, it starts to delete the old records.
 	threshold = 0.5
-	// The percentage of records in Clickhouse will be deleted when the storage is above threshold.
+	// The percentage of records in ClickHouse that will be deleted when the storage grows above threshold.
 	deletePercentage = 0.5
-	// The monitor stops for 3 intervals after a deletion to wait for the Clickhouse MergeTree Engine to release memory.
+	// The monitor stops for 3 intervals after a deletion to wait for the ClickHouse MergeTree Engine to release memory.
 	skipRoundsNum = 3
-	// Connection to Clickhouse timeout if if fails for 1 minute.
+	// Connection to ClickHouse times out if it fails for 1 minute.
 	connTimeout = time.Minute
-	// Retry connection to Clickhouse every 5 seconds if it fails.
+	// Retry connection to ClickHouse every 5 seconds if it fails.
 	connRetryInterval = 5 * time.Second
-	// Query to Clickhouse timeout if if fails for 10 seconds.
+	// Query to ClickHouse time out if if it fails for 10 seconds.
 	queryTimeout = 10 * time.Second
-	// Retry query to Clickhouse every second if it fails.
+	// Retry query to ClickHouse every second if it fails.
 	queryRetryInterval = 1 * time.Second
 	// Time format for timeInserted
 	timeFormat = "2006-01-02 15:04:05"
@@ -58,19 +58,24 @@ var (
 	tableName = os.Getenv("TABLE_NAME")
 	// The names of the materialized views
 	mvNames = strings.Split(os.Getenv("MV_NAMES"), " ")
-	// The namespace of the Clickhouse server
+	// The namespace of the ClickHouse server
 	namespace = os.Getenv("NAMESPACE")
-	// The clickhouse monitor label
+	// The ClickHouse monitor label
 	monitorLabel = os.Getenv("MONITOR_LABEL")
 )
 
 func main() {
+	// Check environment variables
+	if len(tableName) == 0 || len(mvNames) == 0 || len(namespace) == 0 || len(monitorLabel) == 0 {
+		klog.ErrorS(nil, "Unable to load environment variables, TABLE_NAME, MV_NAMES, NAMESPACE and MONITOR_LABEL must be defined")
+		return
+	}
 	// The monitor stops working for several rounds after a deletion
-	// as the release of the memory space for Clickhouse MergeTree engine requires time
+	// as the release of memory space by the ClickHouse MergeTree engine requires time
 	if !skipRound() {
 		connect, err := connectLoop()
 		if err != nil {
-			klog.ErrorS(err, "Error when connecting to Clickhouse")
+			klog.ErrorS(err, "Error when connecting to ClickHouse")
 			return
 		}
 		deleted := monitorMemory(connect)
@@ -119,7 +124,7 @@ func skipRound() bool {
 	return false
 }
 
-// Gets pod logs from the Clickhouse monitor job
+// Gets pod logs from the ClickHouse monitor job
 func getPodLogs() (string, error) {
 	var logString string
 	podLogOpts := corev1.PodLogOptions{}
@@ -135,10 +140,10 @@ func getPodLogs() (string, error) {
 	if err != nil {
 		return logString, fmt.Errorf("error when getting access to K8S: %v", err)
 	}
-	// gets Clickhouse monitor pod
+	// gets ClickHouse monitor pod
 	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), listOptions)
 	if err != nil {
-		return logString, fmt.Errorf("failed to list clickhouse monitor Pods: %v", err)
+		return logString, fmt.Errorf("failed to list ClickHouse monitor Pods: %v", err)
 	}
 	for _, pod := range pods.Items {
 		// reads logs from the last successful pod
@@ -162,9 +167,9 @@ func getPodLogs() (string, error) {
 	return logString, fmt.Errorf("no successful monitor")
 }
 
-// Connects to Clickhouse in a loop
+// Connects to ClickHouse in a loop
 func connectLoop() (*sql.DB, error) {
-	// Clickhouse configuration
+	// ClickHouse configuration
 	userName := os.Getenv("CLICKHOUSE_USERNAME")
 	password := os.Getenv("CLICKHOUSE_PASSWORD")
 	databaseURL := os.Getenv("DB_URL")
@@ -175,32 +180,32 @@ func connectLoop() (*sql.DB, error) {
 		var err error
 		connect, err = sql.Open("clickhouse", dataSourceName)
 		if err != nil {
-			klog.ErrorS(err, "Failed to connect to Clickhouse")
+			klog.ErrorS(err, "Failed to connect to ClickHouse")
 			return false, err
 		}
 		if err := connect.Ping(); err != nil {
 			if exception, ok := err.(*clickhouse.Exception); ok {
-				klog.ErrorS(nil, "Failed to ping Clickhouse", "message", exception.Message)
+				klog.ErrorS(nil, "Failed to ping ClickHouse", "message", exception.Message)
 			} else {
-				klog.ErrorS(err, "Failed to ping Clickhouse")
+				klog.ErrorS(err, "Failed to ping ClickHouse")
 			}
 			return false, err
 		} else {
 			return true, nil
 		}
 	}); err != nil {
-		return nil, fmt.Errorf("failed to connect to Clickhouse after %s", connTimeout)
+		return nil, fmt.Errorf("failed to connect to ClickHouse after %s", connTimeout)
 	}
 	return connect, nil
 }
 
-// Checks the memory usage in the Clickhouse, deletes records when it exceeds the threshold.
+// Checks the memory usage in the ClickHouse, deletes records when it exceeds the threshold.
 func monitorMemory(connect *sql.DB) bool {
 	var (
 		freeSpace  uint64
 		totalSpace uint64
 	)
-	// Get memory usage from Clickhouse system table
+	// Get memory usage from ClickHouse system table
 	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
 		if err := connect.QueryRow("SELECT free_space, total_space FROM system.disks").Scan(&freeSpace, &totalSpace); err != nil {
 			return false, err
@@ -208,7 +213,7 @@ func monitorMemory(connect *sql.DB) bool {
 			return true, nil
 		}
 	}); err != nil {
-		klog.ErrorS(err, "Failed to get memory usage for Clickhouse")
+		klog.ErrorS(err, "Failed to get memory usage for ClickHouse")
 		return false
 	}
 
@@ -228,7 +233,7 @@ func monitorMemory(connect *sql.DB) bool {
 			// Delete all records inserted earlier than an upper boundary of timeInserted
 			command := fmt.Sprintf("ALTER TABLE %s DELETE WHERE timeInserted < toDateTime('%v')", table, timeBoundary.Format(timeFormat))
 			if _, err := connect.Exec(command); err != nil {
-				klog.ErrorS(err, "Failed to delete records from Clickhouse", "table", table)
+				klog.ErrorS(err, "Failed to delete records from ClickHouse", "table", table)
 				return false
 			}
 		}

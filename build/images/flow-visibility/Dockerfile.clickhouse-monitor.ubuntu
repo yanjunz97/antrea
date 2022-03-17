@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 make clickhouse-monitor-plugin
 FROM scratch
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
-LABEL description="A docker image to deploy the clickhouse monitor plugin."
+LABEL description="A docker image to deploy the ClickHouse monitor plugin."
 
 ENV USER root
 

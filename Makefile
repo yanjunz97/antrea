@@ -390,7 +390,7 @@ endif
 .PHONY: flow-visibility-clickhouse-monitor
 flow-visibility-clickhouse-monitor:
 	@echo "===> Building antrea/flow-visibility-clickhouse-monitor Docker image <==="
-	docker build --pull -t antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.clickhouse.monitor.ubuntu $(DOCKER_BUILD_ARGS) .
+	docker build --pull -t antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION) -f build/images/flow-visibility/Dockerfile.clickhouse-monitor.ubuntu $(DOCKER_BUILD_ARGS) .
 	docker tag antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION) antrea/flow-visibility-clickhouse-monitor
 	docker tag antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/flow-visibility-clickhouse-monitor
 	docker tag antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION)

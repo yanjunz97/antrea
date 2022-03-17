@@ -184,7 +184,7 @@ jobs:
         docker push antrea/flow-aggregator:latest
 
   check-clickhouse-monitor-changes:
-    name: Check whether flow-visibility-clickhouse-monitor image need to be built based on diff
+    name: Check whether flow-visibility-clickhouse-monitor image needs to be built based on diff
     runs-on: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v3
