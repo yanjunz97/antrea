@@ -1,0 +1,5 @@
+THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+CRON_LOG_FILE=$THIS_DIR/cron.log
+ENV_VARIABLE_FILE=$THIS_DIR/env.sh
+
+* * * * *  . $ENV_VARIABLE_FILE; $THIS_DIR/run-monitor.sh >> $CRON_LOG_FILE  2>&1

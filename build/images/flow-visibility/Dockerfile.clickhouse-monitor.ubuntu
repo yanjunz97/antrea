@@ -4,16 +4,18 @@ FROM golang:${GO_VERSION} as clickhouse-monitor-build
 COPY . /antrea
 WORKDIR /antrea/plugins/flow-visibility/clickhouse-monitor
 
-# Statically links clickhouse-monitor-plugin binary.
-RUN CGO_ENABLED=0 make clickhouse-monitor-plugin
+RUN make clickhouse-monitor-plugin
 
-FROM scratch
+FROM ubuntu:20.04
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
 LABEL description="A docker image to deploy the ClickHouse monitor plugin."
 
 ENV USER root
 
-COPY --from=clickhouse-monitor-build /antrea/plugins/flow-visibility/clickhouse-monitor/* /
+COPY --from=clickhouse-monitor-build /antrea/plugins/flow-visibility/clickhouse-monitor/* /clickhouse-monitor/
+RUN apt-get update && \
+    apt-get -y install cron && \
+    chmod +x /run.sh
 
-ENTRYPOINT ["/clickhouse-monitor"]
+ENTRYPOINT ["/run.sh"]

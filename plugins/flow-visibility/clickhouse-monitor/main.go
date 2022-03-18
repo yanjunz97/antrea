@@ -15,22 +15,16 @@
 package main
 
 import (
-	"bytes"
-	"context"
 	"database/sql"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 )
 
@@ -57,17 +51,13 @@ var (
 	// The name of the table to store the flow records
 	tableName = os.Getenv("TABLE_NAME")
 	// The names of the materialized views
-	mvNames = strings.Split(os.Getenv("MV_NAMES"), " ")
-	// The namespace of the ClickHouse server
-	namespace = os.Getenv("NAMESPACE")
-	// The ClickHouse monitor label
-	monitorLabel = os.Getenv("MONITOR_LABEL")
+	mvNames = strings.Split(os.Getenv("MV_NAMES"), ",")
 )
 
 func main() {
 	// Check environment variables
-	if len(tableName) == 0 || len(mvNames) == 0 || len(namespace) == 0 || len(monitorLabel) == 0 {
-		klog.ErrorS(nil, "Unable to load environment variables, TABLE_NAME, MV_NAMES, NAMESPACE and MONITOR_LABEL must be defined")
+	if len(tableName) == 0 || len(mvNames) == 0 {
+		klog.ErrorS(nil, "Unable to load environment variables, TABLE_NAME and MV_NAMES must be defined")
 		return
 	}
 	// The monitor stops working for several rounds after a deletion
@@ -80,6 +70,7 @@ func main() {
 		}
 		deleted := monitorMemory(connect)
 		if deleted {
+
 			klog.InfoS("Skip rounds after a successful deletion", "skipRoundsNum", skipRoundsNum)
 		} else {
 			klog.InfoS("Next round will not be skipped", "skipRoundsNum", 0)
@@ -90,29 +81,13 @@ func main() {
 // Checks the k8s log for the number of rounds to skip.
 // Returns true when the monitor needs to skip more rounds and log the rest number of rounds to skip.
 func skipRound() bool {
-	logString, err := getPodLogs()
+	roundsFile := "./rounds"
+	roundsBytes, err := ioutil.ReadFile(roundsFile)
 	if err != nil {
-		klog.ErrorS(err, "Not find last monitor job")
+		klog.ErrorS(err, "Unable to open the state file", "file", roundsFile)
 		return false
 	}
-	// A sample log string looks like the following
-	// [clickhouse]host(s)=clickhouse-clickhouse.flow-visibility.svc.cluster.local:9000, database=default, username=clickhouse_operator
-	// ...
-	// [clickhouse][connect=1][prepare] SELECT free_space, total_space FROM system.disks
-	// [clickhouse][connect=1][send query] SELECT free_space, total_space FROM system.disks
-	// ...
-	// I0208 19:54:07.346630       1 main.go:213] "Memory usage" total=1979224064 used=11431936 percentage=0.005775968576744225
-	// I0207 22:29:06.283450       1 main.go:71] "Next round will not be skipped" skipRoundsNum=0
-	// ...
-
-	// reads the number of rounds requires to be skipped
-	logs := strings.Split(logString, "skipRoundsNum=")
-	if len(logs) != 2 {
-		klog.ErrorS(nil, "Error when finding number of rounds")
-		return false
-	}
-	lines := strings.Split(logs[1], "\n")
-	remainingRoundsNum, convErr := strconv.Atoi(lines[0])
+	remainingRoundsNum, convErr := strconv.Atoi(string(roundsBytes))
 	if convErr != nil {
 		klog.ErrorS(convErr, "Error when finding last monitor job")
 		return false
@@ -122,49 +97,6 @@ func skipRound() bool {
 		return true
 	}
 	return false
-}
-
-// Gets pod logs from the ClickHouse monitor job
-func getPodLogs() (string, error) {
-	var logString string
-	podLogOpts := corev1.PodLogOptions{}
-	config, err := rest.InClusterConfig()
-	listOptions := metav1.ListOptions{
-		LabelSelector: monitorLabel,
-	}
-	if err != nil {
-		return logString, fmt.Errorf("error when getting config: %v", err)
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return logString, fmt.Errorf("error when getting access to K8S: %v", err)
-	}
-	// gets ClickHouse monitor pod
-	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), listOptions)
-	if err != nil {
-		return logString, fmt.Errorf("failed to list ClickHouse monitor Pods: %v", err)
-	}
-	for _, pod := range pods.Items {
-		// reads logs from the last successful pod
-		if pod.Status.Phase == corev1.PodSucceeded {
-			req := clientset.CoreV1().Pods(namespace).GetLogs(pod.Name, &podLogOpts)
-			podLogs, err := req.Stream(context.TODO())
-			if err != nil {
-				return logString, fmt.Errorf("error when opening stream: %v", err)
-			}
-			defer podLogs.Close()
-
-			buf := new(bytes.Buffer)
-			_, err = io.Copy(buf, podLogs)
-			if err != nil {
-				return logString, fmt.Errorf("error when copying information from podLogs to buf: %v", err)
-			}
-			logString := buf.String()
-			return logString, nil
-		}
-	}
-	return logString, fmt.Errorf("no successful monitor")
 }
 
 // Connects to ClickHouse in a loop
