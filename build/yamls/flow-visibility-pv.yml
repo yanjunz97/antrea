@@ -4904,6 +4904,7 @@ spec:
       clickhouse_operator/networks/ip: ::/0
   defaults:
     templates:
+      dataVolumeClaimTemplate: clickhouse-storage-template
       podTemplate: pod-template
       serviceTemplate: service-template
   templates:
@@ -4916,8 +4917,6 @@ spec:
           volumeMounts:
           - mountPath: /docker-entrypoint-initdb.d
             name: clickhouse-configmap-volume
-          - mountPath: /var/lib/clickhouse
-            name: clickhouse-storage-volume
         - env:
           - name: CLICKHOUSE_USERNAME
             valueFrom:
@@ -4942,10 +4941,6 @@ spec:
         - configMap:
             name: clickhouse-mounted-configmap-58fkkt9b56
           name: clickhouse-configmap-volume
-        - emptyDir:
-            medium: Memory
-            sizeLimit: 8Gi
-          name: clickhouse-storage-volume
     serviceTemplates:
     - name: service-template
       spec:
@@ -4954,3 +4949,12 @@ spec:
           port: 8123
         - name: tcp
           port: 9000
+    volumeClaimTemplates:
+    - name: clickhouse-storage-template
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 8Gi
+        storageClassName: storageName

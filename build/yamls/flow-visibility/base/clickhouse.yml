@@ -45,8 +45,6 @@ spec:
               volumeMounts:
                 - name: clickhouse-configmap-volume
                   mountPath: /docker-entrypoint-initdb.d
-                - name: clickhouse-storage-volume
-                  mountPath: /var/lib/clickhouse
             - name: clickhouse-monitor
               image: flow-visibility-clickhouse-monitor
               env:
@@ -70,7 +68,3 @@ spec:
             - name: clickhouse-configmap-volume
               configMap:
                 name: $(CLICKHOUSE_CONFIG_MAP_NAME)
-            - name: clickhouse-storage-volume
-              emptyDir:
-                medium: Memory
-                sizeLimit: 8Gi
