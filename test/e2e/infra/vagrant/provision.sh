@@ -20,12 +20,15 @@ function usage() {
     --large                                 Deploy large vagrant VMs with 2 vCPUs and 4096MB memory.
                                             By default, we deploy VMs with 2 vCPUs and 2048MB memory.
     --kube-proxy-mode <iptables|ipvs|none>  Which mode to use for kube-proxy (default is iptables).
-                                            Setting to 'none' will skip deploying kube-proxy."
+                                            Setting to 'none' will skip deploying kube-proxy.
+    --clickhouse-disk                       Deploy vagrant VMs with extra disk for ClickHouse"
+    
 }
 
 K8S_IP_FAMILY="v4"
 K8S_NODE_LARGE=false
 KUBE_PROXY_MODE="iptables"
+K8S_CLICKHOUSE_DISK=false
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -42,6 +45,10 @@ case $key in
     --kube-proxy-mode)
     KUBE_PROXY_MODE="$2"
     shift 2
+    ;;
+    --clickhouse-disk)
+    K8S_CLICKHOUSE_DISK=true
+    shift 1
     ;;
     -h|--help)
     usage
@@ -60,6 +67,7 @@ pushd $THIS_DIR
 export K8S_NODE_LARGE
 export K8S_IP_FAMILY
 export KUBE_PROXY_MODE
+export K8S_CLICKHOUSE_DISK
 
 # A few important considerations for IPv6 clusters:
 # * there is no assumption that the host machine supports IPv6.
