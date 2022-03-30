@@ -395,6 +395,15 @@ flow-visibility-clickhouse-monitor:
 	docker tag antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/flow-visibility-clickhouse-monitor
 	docker tag antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/flow-visibility-clickhouse-monitor:$(DOCKER_IMG_VERSION)
 
+.PHONY: flow-visibility-clickhouse-tester
+flow-visibility-clickhouse-tester:
+	@echo "===> Building antrea/flow-visibility-clickhouse-tester Docker image <==="
+	docker build --pull -t antrea/flow-visibility-clickhouse-tester:$(DOCKER_IMG_VERSION) -f build/images/flow-visibility/Dockerfile.clickhouse-tester.ubuntu $(DOCKER_BUILD_ARGS) .
+	docker tag antrea/flow-visibility-clickhouse-tester:$(DOCKER_IMG_VERSION) antrea/flow-visibility-clickhouse-tester
+	docker tag antrea/flow-visibility-clickhouse-tester:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/flow-visibility-clickhouse-tester
+	docker tag antrea/flow-visibility-clickhouse-tester:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/flow-visibility-clickhouse-tester:$(DOCKER_IMG_VERSION)
+
+
 .PHONY: flow-aggregator-image
 flow-aggregator-image:
 	@echo "===> Building antrea/flow-aggregator Docker image <==="

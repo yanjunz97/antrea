@@ -1,0 +1,18 @@
+ARG GO_VERSION
+FROM golang:${GO_VERSION} as clickhouse-tester-build
+
+COPY . /antrea
+WORKDIR /antrea/plugins/flow-visibility/clickhouse-tester
+
+# Statically links clickhouse-monitor-plugin binary.
+RUN CGO_ENABLED=0 make clickhouse-tester-plugin
+
+FROM ubuntu:20.04
+
+LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
+LABEL description="A docker image to deploy the ClickHouse tester plugin."
+
+ENV USER root
+
+COPY --from=clickhouse-tester-build /antrea/plugins/flow-visibility/clickhouse-tester/* /
+
