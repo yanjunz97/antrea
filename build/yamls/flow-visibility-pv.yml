@@ -7,6 +7,15 @@ allowVolumeExpansion: true
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
+  name: clickhouse-storage
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+---
+allowVolumeExpansion: true
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
   name: grafana-storage
 provisioner: kubernetes.io/no-provisioner
 reclaimPolicy: Delete
@@ -4760,6 +4769,28 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
+  name: clickhouse-pv
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 8Gi
+  local:
+    path: /data/clickhouse
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: clickhouse/instance
+          operator: In
+          values:
+          - data
+  storageClassName: clickhouse-storage
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
   name: grafana-pv
 spec:
   accessModes:
@@ -4917,26 +4948,6 @@ spec:
           volumeMounts:
           - mountPath: /docker-entrypoint-initdb.d
             name: clickhouse-configmap-volume
-        - env:
-          - name: CLICKHOUSE_USERNAME
-            valueFrom:
-              secretKeyRef:
-                key: username
-                name: clickhouse-secret
-          - name: CLICKHOUSE_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                key: password
-                name: clickhouse-secret
-          - name: DB_URL
-            value: tcp://localhost:9000
-          - name: TABLE_NAME
-            value: default.flows
-          - name: MV_NAMES
-            value: default.flows_pod_view default.flows_node_view default.flows_policy_view
-          image: projects.registry.vmware.com/antrea/flow-visibility-clickhouse-monitor:latest
-          imagePullPolicy: IfNotPresent
-          name: clickhouse-monitor
         volumes:
         - configMap:
             name: clickhouse-mounted-configmap-58fkkt9b56
@@ -4957,4 +4968,4 @@ spec:
         resources:
           requests:
             storage: 8Gi
-        storageClassName: storageName
+        storageClassName: clickhouse-storage

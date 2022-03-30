@@ -33,6 +33,7 @@ print it to stdout.
         --nfs <hostname:path>       Create the Persistent Volume for ClickHouse with a provided
                                     NFS server hostname or IP address and the path exported in the
                                     form of hostname:path.
+        --no-ch-monitor             Generate a manifest without the ClickHouse monitor.
 
 This tool uses kustomize (https://github.com/kubernetes-sigs/kustomize) to generate manifests for
 Clickhouse-Grafana Flow-visibility Solution. You can set the KUSTOMIZE environment variable to the
@@ -53,6 +54,7 @@ VOLUME="ram"
 STORAGECLASS=""
 LOCALPATH=""
 NFSPATH=""
+CHMONITOR=true
 
 while [[ $# -gt 0 ]]
 do
@@ -81,6 +83,10 @@ case $key in
     --nfs)
     NFSPATH="$2"
     shift 2
+    ;;
+    --no-ch-monitor)
+    CHMONITOR=false
+    shift 1
     ;;
     -h|--help)
     print_usage
@@ -158,14 +164,39 @@ pushd $TMP_DIR > /dev/null
 
 BASE=../../base
 
+
+if $CHMONITOR; then
+    mkdir chmonitor && cd chmonitor
+    cp $KUSTOMIZATION_DIR/patches/chmonitor/*.yml .
+    touch kustomization.yml
+    $KUSTOMIZE edit add base $BASE
+    $KUSTOMIZE edit add patch --path chMonitor.yml --group clickhouse.altinity.com --version v1 --kind ClickHouseInstallation --name clickhouse
+    BASE=../chmonitor
+    cd ..
+    mkdir $MODE && cd $MODE
+    touch kustomization.yml
+    $KUSTOMIZE edit add base $BASE
+    # ../../patches/$MODE may be empty so we use find and not simply cp
+    find ../../patches/$MODE -name \*.yml -exec cp {} . \;
+
+    if [ "$MODE" == "dev" ]; then
+        $KUSTOMIZE edit set image flow-visibility-clickhouse-monitor=projects.registry.vmware.com/antrea/flow-visibility-clickhouse-monitor:latest
+        $KUSTOMIZE edit add patch --path imagePullPolicy.yml --group clickhouse.altinity.com --version v1 --kind ClickHouseInstallation --name clickhouse
+    fi
+
+    if [ "$MODE" == "release" ]; then
+        $KUSTOMIZE edit set image flow-visibility-clickhouse-monitor=$IMG_NAME:$IMG_TAG
+    fi
+    BASE=../$MODE
+    cd ..
+fi
+
 if [ "$VOLUME" == "ram" ]; then
     mkdir ram && cd ram
     cp $KUSTOMIZATION_DIR/patches/ram/*.yml .
     touch kustomization.yml
     $KUSTOMIZE edit add base $BASE
     $KUSTOMIZE edit add patch --path mountRam.yml --group clickhouse.altinity.com --version v1 --kind ClickHouseInstallation --name clickhouse
-    BASE=../ram
-    cd ..
 fi
 
 if [ "$VOLUME" == "pv" ]; then
@@ -189,23 +220,6 @@ if [ "$VOLUME" == "pv" ]; then
         $KUSTOMIZE edit add base createNfsPv.yml
     fi
     $KUSTOMIZE edit add patch --path mountPv.yml --group clickhouse.altinity.com --version v1 --kind ClickHouseInstallation --name clickhouse
-    BASE=../pv
-    cd ..
-fi
-
-mkdir $MODE && cd $MODE
-touch kustomization.yml
-$KUSTOMIZE edit add base $BASE
-# ../../patches/$MODE may be empty so we use find and not simply cp
-find ../../patches/$MODE -name \*.yml -exec cp {} . \;
-
-if [ "$MODE" == "dev" ]; then
-    $KUSTOMIZE edit set image flow-visibility-clickhouse-monitor=projects.registry.vmware.com/antrea/flow-visibility-clickhouse-monitor:latest
-    $KUSTOMIZE edit add patch --path imagePullPolicy.yml --group clickhouse.altinity.com --version v1 --kind ClickHouseInstallation --name clickhouse
-fi
-
-if [ "$MODE" == "release" ]; then
-    $KUSTOMIZE edit set image flow-visibility-clickhouse-monitor=$IMG_NAME:$IMG_TAG
 fi
 
 $KUSTOMIZE build
