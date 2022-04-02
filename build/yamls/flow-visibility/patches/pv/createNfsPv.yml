@@ -18,7 +18,6 @@ spec:
   accessModes:
     - ReadWriteOnce
   volumeMode: Filesystem
-  persistentVolumeReclaimPolicy: Recycle
   nfs:
     path: NFS_SERVER_PATH
     server: NFS_SERVER_ADDRESS

@@ -164,7 +164,6 @@ pushd $TMP_DIR > /dev/null
 
 BASE=../../base
 
-
 if $CHMONITOR; then
     mkdir chmonitor && cd chmonitor
     cp $KUSTOMIZATION_DIR/patches/chmonitor/*.yml .
@@ -215,8 +214,8 @@ if [ "$VOLUME" == "pv" ]; then
         $KUSTOMIZE edit add base createLocalPv.yml
     fi
     if [[ $NFSPATH != "" ]]; then
-        sed -i.bak -E "s~NFS_SERVER_PATH~${pathPair[0]}~" createNfsPv.yml
-        sed -i.bak -E "s~NFS_SERVER_ADDRESS~${pathPair[1]}~" createNfsPv.yml
+        sed -i.bak -E "s~NFS_SERVER_ADDRESS~${pathPair[0]}~" createNfsPv.yml
+        sed -i.bak -E "s~NFS_SERVER_PATH~${pathPair[1]}~" createNfsPv.yml
         $KUSTOMIZE edit add base createNfsPv.yml
     fi
     $KUSTOMIZE edit add patch --path mountPv.yml --group clickhouse.altinity.com --version v1 --kind ClickHouseInstallation --name clickhouse
