@@ -1,0 +1,10 @@
+- op: add
+  path: /spec/configuration/zookeeper
+  value: 
+    nodes:
+    - host: zookeeper.zoons
+- op: replace
+  path: /spec/configuration/clusters/0/layout
+  value: 
+    shardsCount: 2
+    replicasCount: 2

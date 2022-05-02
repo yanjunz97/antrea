@@ -34,6 +34,7 @@ print it to stdout.
                                     NFS server hostname or IP address and the path exported in the
                                     form of hostname:path.
         --no-ch-monitor             Generate a manifest without the ClickHouse monitor.
+        --cluster                   Enable ClickHouse deployment with cluster.
 
 This tool uses kustomize (https://github.com/kubernetes-sigs/kustomize) to generate manifests for
 Clickhouse-Grafana Flow-visibility Solution. You can set the KUSTOMIZE environment variable to the
@@ -55,6 +56,7 @@ STORAGECLASS=""
 LOCALPATH=""
 NFSPATH=""
 CHMONITOR=true
+CLUSTER=false
 
 while [[ $# -gt 0 ]]
 do
@@ -86,6 +88,10 @@ case $key in
     ;;
     --no-ch-monitor)
     CHMONITOR=false
+    shift 1
+    ;;
+    --cluster)
+    CLUSTER=true
     shift 1
     ;;
     -h|--help)
@@ -187,6 +193,17 @@ if $CHMONITOR; then
         $KUSTOMIZE edit set image flow-visibility-clickhouse-monitor=$IMG_NAME:$IMG_TAG
     fi
     BASE=../$MODE
+    cd ..
+fi
+
+if $CLUSTER; then
+    mkdir cluster && cd cluster
+    cp $KUSTOMIZATION_DIR/patches/cluster/*.yml .
+    touch kustomization.yml
+    $KUSTOMIZE edit add base $BASE
+    $KUSTOMIZE edit add base zookeeper.yml
+    $KUSTOMIZE edit add patch --path cluster.yml --group clickhouse.altinity.com --version v1 --kind ClickHouseInstallation --name clickhouse
+    BASE=../cluster
     cd ..
 fi
 

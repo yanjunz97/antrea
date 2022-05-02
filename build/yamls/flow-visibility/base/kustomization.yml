@@ -16,7 +16,7 @@ configMapGenerator:
 - name: clickhouse-mounted-configmap
   namespace: flow-visibility
   files:
-  - provisioning/datasources/create_table.sh
+  - provisioning/datasources/create_table_cluster.sh
 - name: grafana-dashboard-config
   files:
    - provisioning/dashboards/flow_records_dashboard.json
